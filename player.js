@@ -80,7 +80,7 @@ export async function playerStatsUp(player, stage) {
     }
     else if (percent === 3) {
         //최대 공격력 배율(0.1 ~ 1)
-        ability = Math.floor(Math.random()) + 0.1
+        ability = Math.floor(Math.random() * 10 + 1) / 10
         player.setAttack_max(player.getAttack_max() + ability)
         Stats = "최대 공격력 배율"
     }

@@ -12,7 +12,7 @@ function selection(num, player, monster, logs) {
       attack("player", player, monster, logs)
       return ["attack", true]
     case "2": //연속공격
-      let percent = Math.floor(Math.random() * 101)
+      let percent = Math.floor(Math.random() * 100)
       if (percent <= player.getDobble_attack()) { //공격 성공
         attack("player", player, monster, logs)
         attack("player", player, monster, logs)
@@ -44,7 +44,7 @@ function selection(num, player, monster, logs) {
 }
 function defense(player, logs) {
   //방어
-  let percent = Math.floor(Math.random() * 101)
+  let percent = Math.floor(Math.random() * 100) + 1 // 1 ~ 100 중 랜덤 값
   if (percent <= player.getGuard()) {
     logs.push(chalk.green('플레이어가 방어에 성공하였습니다.'))
     return true
@@ -56,7 +56,7 @@ function defense(player, logs) {
 }
 function runaway(player, logs) {
   //도망
-  let percent = Math.floor(Math.random() * 101)
+  let percent = Math.floor(Math.random() * 100) + 1 // 1 ~ 100 중 랜덤 값
   if (percent <= player.getEscape()) {
     logs.push(chalk.green('플레이어가 도망에 성공하였습니다.'))
     return true
@@ -70,7 +70,7 @@ function attack(attacker, player, monster, logs) {
 
   if (attacker === "player") {
     // 플레이어의 공격 - 변동 값(반올림) + 최소 데미지
-    let damage = Math.round(Math.random() * (parseInt(player.getAttack_min() * player.getAttack_max()) - player.getAttack_min())) + player.getAttack_min()
+    let damage = Math.round(Math.random() * (parseInt(player.getAttack_min() * player.getAttack_max()) - player.getAttack_min() + 1)) + player.getAttack_min()
     let monster_hp = monster.getHp() - damage
     //몬스터 체력 변경
     monster.setHp(monster_hp)
@@ -78,11 +78,11 @@ function attack(attacker, player, monster, logs) {
   }
   else if (attacker === "monster") {
     // 몬스터의 공격
-    let damage = Math.round(Math.random() * (parseInt(monster.getAttack_min() * monster.getAttack_max()) - monster.getAttack_min())) + monster.getAttack_min()
+    let damage = Math.round(Math.random() * (parseInt(monster.getAttack_min() * monster.getAttack_max()) - monster.getAttack_min() + 1)) + monster.getAttack_min()
     let player_hp = player.getHp() - damage
     //플레이어 체력 변경
     player.setHp(player_hp)
-    logs.push(chalk.green(`${damage} 만큼 피해를 입었습니다. 내 남은 체력: ${player.getHp()}`))
+    logs.push(chalk.red(`${damage} 만큼 피해를 입었습니다. 내 남은 체력: ${player.getHp()}`))
   }
   else {
 
@@ -100,10 +100,10 @@ function displayStatus(stage, player, monster) {
   console.log(
     chalk.cyanBright(`| Stage: ${stage} `) +
     chalk.blueBright(
-      `| Player HP: ${player.hp} Attack: ${player.attack_min} ~ ${parseInt(player.attack_min * player.attack_max)} `
+      `| Player HP: ${player.getHp()} Attack: ${player.getAttack_min()} ~ ${parseInt(player.getAttack_min() * player.getAttack_max())} `
     ) +
     chalk.redBright(
-      `| Monster HP: ${monster.hp} Attack: ${monster.attack_min} ~ ${parseInt(monster.attack_min * monster.attack_max)}|`
+      `| Monster HP: ${monster.getHp()} Attack: ${monster.getAttack_min()} ~ ${parseInt(monster.getAttack_min() * monster.getAttack_max())}|`
     ),
   );
   console.log(chalk.magentaBright(`=====================\n`));
@@ -125,7 +125,7 @@ const battle = async (stage, player, monster) => {
     console.clear();
     displayStatus(stage, player, monster);
 
-    logs.forEach(async (log) => console.log(log));
+    logs.slice(-12).forEach(async (log) => console.log(log));
 
     console.log(
       chalk.green(
@@ -142,6 +142,9 @@ const battle = async (stage, player, monster) => {
 
     // 몬스터 사망 확인
     if (monster.getHp() <= 0) {
+      console.clear();
+      displayStatus(stage, player, monster);
+
       console.log(chalk.bgBlue(`몬스터가 사망했습니다.`));
       sleep(1000)
       break
@@ -185,12 +188,12 @@ export async function startGame() {
   let stage = 1;
   const monster = new Monster();
   while (stage <= 10) {
-    monsterStatsUp(monster, stage)
+    await monsterStatsUp(monster, stage)
     const battleResult = await battle(stage, player, monster);
     await sleep(1000)
     //스테이지 클리어시
     if (battleResult) {
-      playerStatsUp(player, stage)
+      await playerStatsUp(player, stage)
     }
     else {
       console.log(chalk.red("플레이어가 사망하였습니다."))
@@ -205,5 +208,12 @@ export async function startGame() {
 
     // 스테이지 클리어 및 게임 종료 조건
     stage++;
+  }
+  if (stage > 10) {
+    console.log(chalk.bgBlue(`축하합니다. 10 스테이지까지 모두 완료하였습니다.`))
+    for (let exit = 3; exit > 0; exit--) {
+      console.log(chalk.red(`${exit}초 후 종료됩니다.`))
+      await sleep(1000)
+    }
   }
 }
